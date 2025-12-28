@@ -1,0 +1,16 @@
+# https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+
+BasedOnStyle: LLVM
+UseTab: Always
+IndentWidth: 4
+TabWidth: 4
+
+# {} の省略を許容しない（自動で挿入する）※Clang 15以上が必要
+InsertBraces: true
+
+# 1行のブロックを許容しない
+AllowShortBlocksOnASingleLine : Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine : Empty
