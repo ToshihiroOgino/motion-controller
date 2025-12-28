@@ -34,3 +34,4 @@ dtoverlay=pwm,pin=19,func=2
 ## Resources
 
 - [GPIO Usage on Raspberry Pi Devices](https://pip.raspberrypi.com/categories/685-whitepapers-app-notes/documents/RP-006553-WP/A-history-of-GPIO-usage-on-Raspberry-Pi-devices-and-current-best-practices.pdf)
+- [libgpiod/libgpiod.git](https://git.kernel.org/pub/scm/libs/libgpiod/libgpiod.git/?h=v2.1.x)
