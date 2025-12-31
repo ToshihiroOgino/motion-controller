@@ -1,7 +1,7 @@
 #ifndef GPIP_UTIL_HPP_
 #define GPIP_UTIL_HPP_
 
-#include <gpiod.h>
+#include <gpiod.hpp>
 
 class GPIO_Pin {
   public:
@@ -12,8 +12,8 @@ class GPIO_Pin {
 
   private:
 	unsigned int pin_offset;
-	struct gpiod_chip *chip;
-	struct gpiod_line_info *line;
+	std::unique_ptr<gpiod::chip> chip;
+    std::unique_ptr<gpiod::line_request> request;
 };
 
 #endif /* GPIP_UTIL_HPP_ */
