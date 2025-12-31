@@ -1,4 +1,5 @@
 from rpi_hardware_pwm import HardwarePWM
+import time
 
 # リモコンのキャリア周波数: 38kHz
 CARRIER_FREQ = 38000
@@ -12,8 +13,10 @@ if __name__ == "__main__":
     print(f"送信開始")
     pwm.start(0)
     try:
+        pwm.change_duty_cycle(50)
         while True:
-            pwm.change_duty_cycle(100)
+            # pwm.change_duty_cycle(50)
+            time.sleep(0.1)
     except KeyboardInterrupt:
         print("\n送信が中断されました")
     finally:
