@@ -4,14 +4,14 @@
 #include <gpiod.h>
 
 class GPIO_Pin {
-public:
-	GPIO_Pin();
+  public:
+	GPIO_Pin(uint32_t pin_offset);
 	~GPIO_Pin();
 	bool read_value();
 	void wait_for_active();
 
-private:
-	int pin_number;
+  private:
+	unsigned int pin_offset;
 	struct gpiod_chip *chip;
 	struct gpiod_line_info *line;
 };
