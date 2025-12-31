@@ -10,22 +10,35 @@ if input_file_path == "":
 
 data = np.loadtxt(input_file_path, delimiter=",", dtype=int, skiprows=1)
 
-
 # 列の抽出
-states = data[:, 0]  # 0 or 1
-durations = data[:, 1]  # us
+timestamps = data[:, 0]  # マイクロ秒（記録開始からのオフセット）
+states = data[:, 1]  # 0 or 1
 
 # --- 波形データの作成 ---
-# 累積時間を計算して、各区間の開始・終了時刻を作成
-time_cumsum = np.cumsum(durations)
-time_starts = np.insert(time_cumsum[:-1], 0, 0)
-time_ends = time_cumsum
+# タイムスタンプで状態が変わるので、各状態が続く期間を計算
+# 波形を描くために、状態変化点での座標を作成
+plot_x = []
+plot_y = []
 
-# 矩形波を描くために、各区間の「開始点」と「終了点」の座標を交互に並べる
-# X軸: [Start1, End1, Start2, End2, ...]
-plot_x = np.column_stack((time_starts, time_ends)).flatten()
-# Y軸: [State1, State1, State2, State2, ...]
-plot_y = np.column_stack((states, states)).flatten()
+for i in range(len(data)):
+    if i == 0:
+        # 最初の点は開始時刻(0)から
+        plot_x.append(0)
+        plot_y.append(states[i])
+    
+    # 状態変化点
+    plot_x.append(timestamps[i])
+    plot_y.append(states[i-1] if i > 0 else states[i])
+    plot_x.append(timestamps[i])
+    plot_y.append(states[i])
+
+# 最後の状態を終了まで表示
+if len(timestamps) > 0:
+    plot_x.append(timestamps[-1])
+    plot_y.append(states[-1])
+
+plot_x = np.array(plot_x)
+plot_y = np.array(plot_y)
 
 # --- プロット ---
 plt.figure(figsize=(12, 4))
@@ -33,7 +46,7 @@ plt.plot(plot_x, plot_y, linewidth=1.5)
 
 # 見やすくするための設定
 plt.title("IR Signal")
-plt.xlabel("Time (ms)")
+plt.xlabel("Time (μs)")
 plt.ylabel("State")
 plt.yticks([0, 1], ["OFF (0)", "ON (1)"])
 plt.grid(True, linestyle="--", alpha=0.7)

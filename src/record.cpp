@@ -39,6 +39,9 @@ vector<pair<microseconds, bool>> read_sensor(GPIO_Pin &pin,
 			prev_value = current_value;
 		}
 		if (now - begining > timeout) {
+			if (current_value) {
+				readings.emplace_back(now, current_value);
+			}
 			break;
 		}
 	}
@@ -68,7 +71,7 @@ int main(int argc, char const *argv[]) {
 
 	auto pin = GPIO_Pin(18);
 
-	const auto data = read_sensor(pin, 1000);
+	const auto data = read_sensor(pin, 500);
 
 	// Write to csv file
 	const auto timestamp = chrono::system_clock::now();
