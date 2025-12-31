@@ -21,7 +21,10 @@ GPIO_Pin::GPIO_Pin(unsigned int pin_offset) : pin_offset(pin_offset) {
 }
 
 GPIO_Pin::~GPIO_Pin() {
-	if (this->chip != nullptr) {
+	if (this->request) {
+		this->request->release();
+	}
+	if (this->chip) {
 		this->chip->close();
 	}
 }
