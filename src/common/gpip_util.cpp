@@ -1,5 +1,6 @@
 #include "gpip_util.hpp"
 
+#include <filesystem>
 #include <iostream>
 #include <string>
 
@@ -8,23 +9,32 @@ using namespace std;
 #define GPIO_CHIP_PATH "/dev/gpiochip0"
 
 GPIO_Pin::GPIO_Pin(unsigned int pin_offset) : pin_offset(pin_offset) {
-	GPIO_Pin::chip = gpiod_chip_open(GPIO_CHIP_PATH);
-	if (GPIO_Pin::chip == NULL) {
-		const auto msg = string() + GPIO_CHIP_PATH;
-		cerr << "Failed to open GPIO chip at " << GPIO_CHIP_PATH << endl;
-		throw 1;
-	}
+	this->chip =
+		std::make_unique<gpiod::chip>(filesystem::path(GPIO_CHIP_PATH));
 
-	GPIO_Pin::line = gpiod_chip_get_line_info(GPIO_Pin::chip, pin_offset);
+	this->request = std::make_unique<gpiod::line_request>(
+		chip->prepare_request()
+			.set_consumer("uv-reader")
+			.add_line_settings(pin_offset, gpiod::line_settings().set_direction(
+											   gpiod::line::direction::INPUT))
+			.do_request());
 }
 
 GPIO_Pin::~GPIO_Pin() {
-	gpiod_chip_close(GPIO_Pin::chip);
+	if (this->chip != nullptr) {
+		this->chip->close();
+	}
 }
 
 bool GPIO_Pin::read_value() {
-	auto val = gpiod_line_info_get_offset(GPIO_Pin::line);
-	return val;
+	if (!chip || !request) {
+		cerr << "GPIO chip is not initialized." << endl;
+		throw std::runtime_error("GPIO not initialized");
+	}
+
+	const auto value = request->get_value(this->pin_offset);
+	// Because of the pull-up resistor, ACTIVE means LOW voltage level.
+	return value == gpiod::line::value::INACTIVE;
 }
 
 void GPIO_Pin::wait_for_active() {
