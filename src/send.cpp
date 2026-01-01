@@ -13,6 +13,9 @@ using namespace std;
 using namespace chrono;
 
 #define PWM_FREQUENCY_HZ 38000
+#define RETRY_COUNT 3
+#define INTERVAL_MS 50
+#define ON_DUTY_CYCLE 25
 
 struct SensorData {
 	long timestamp_us;
@@ -70,15 +73,6 @@ vector<SensorData> read_csv(const string &filename) {
 }
 
 void send_data(const vector<SensorData> &data, GPIO_PWM &pwm) {
-	if (data.empty()) {
-		cerr << "No data to send" << endl;
-		return;
-	}
-
-	cerr << "Start sending data..." << endl;
-
-	pwm.enable();
-
 	auto start_at = high_resolution_clock::now();
 	size_t data_index = 0;
 
@@ -95,26 +89,14 @@ void send_data(const vector<SensorData> &data, GPIO_PWM &pwm) {
 			// Update PWM state
 			const bool current_value = data[data_index].value;
 			if (current_value) {
-				pwm.set_duty_cycle(25); // 50% duty cycle for HIGH
+				pwm.set_duty_cycle(ON_DUTY_CYCLE);
 			} else {
-				pwm.set_duty_cycle(0); // 0% duty cycle for LOW
+				pwm.set_duty_cycle(0);
 			}
 			data_index++;
 		}
+		this_thread::sleep_for(microseconds(100));
 	}
-
-	pwm.disable();
-
-	cerr << "Send completed" << endl;
-}
-
-void always_on_until_input(GPIO_PWM &pwm) {
-	cerr << "PWM always ON mode. Press Enter to stop..." << endl;
-	pwm.enable();
-	pwm.set_duty_cycle(50);
-	cin.get();
-	pwm.disable();
-	cerr << "PWM always ON mode stopped." << endl;
 }
 
 int main(int argc, char const *argv[]) {
@@ -126,11 +108,23 @@ int main(int argc, char const *argv[]) {
 
 	const string csv_filename = argv[1];
 
+	const auto data = read_csv(csv_filename);
+	if (data.empty()) {
+		cerr << "No data to send" << endl;
+		return 1;
+	}
+
+	cerr << "Start sending data..." << endl;
+
 	try {
-		const auto data = read_csv(csv_filename);
 		GPIO_PWM pwm(1, PWM_FREQUENCY_HZ);
-		send_data(data, pwm);
-		// always_on_until_input(pwm);
+		pwm.enable();
+		for (int i = 0; i < RETRY_COUNT; ++i) {
+			send_data(data, pwm);
+			this_thread::sleep_for(milliseconds(INTERVAL_MS));
+		}
+		pwm.disable();
+		cerr << "Send completed" << endl;
 	} catch (const exception &e) {
 		cerr << "Error: " << e.what() << endl;
 		return 1;
