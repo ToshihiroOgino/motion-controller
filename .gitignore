@@ -2,3 +2,4 @@ img/
 report/
 .venv/
 build/
+out/
