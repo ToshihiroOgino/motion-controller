@@ -3,11 +3,15 @@
 ## Requirements
 
 - Raspberry Pi 4B
+- C++ Dev Environment
 - Python 3.12 (**not higher than 3.12** because of mediapipe compatibility)
+- CMake
+- libgpiod-dev
 
 ## Installation
 
 ```sh
+sudo apt install -y libgpiod-dev
 pip install -r requirements.txt
 ```
 
