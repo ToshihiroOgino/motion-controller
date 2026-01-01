@@ -43,8 +43,8 @@ make
 
 Executables:
 
-- record: Record UV signal
-- send: Transmit UV signal
+- bin/record: Record UV signal
+- bin/send: Transmit UV signal
 
 ## Resources
 
