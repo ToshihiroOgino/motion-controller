@@ -95,7 +95,7 @@ void send_data(const vector<SensorData> &data, GPIO_PWM &pwm) {
 			// Update PWM state
 			const bool current_value = data[data_index].value;
 			if (current_value) {
-				pwm.set_duty_cycle(50); // 50% duty cycle for HIGH
+				pwm.set_duty_cycle(25); // 50% duty cycle for HIGH
 			} else {
 				pwm.set_duty_cycle(0); // 0% duty cycle for LOW
 			}
