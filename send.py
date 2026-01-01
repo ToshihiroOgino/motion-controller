@@ -3,41 +3,80 @@ import time
 import sys
 from rpi_hardware_pwm import HardwarePWM
 
-# リモコンのキャリア周波数: 38kHz
-CARRIER_FREQ = 40_000
+# PWM周波数: 38kHz (send.cppに合わせる)
+PWM_FREQUENCY_HZ = 38000
 # GPIO19 -> PWM Channel 1
 PWM_CHANNEL = 1
+# 送信リトライ回数
+RETRY_COUNT = 3
+# リトライ間隔(秒)
+INTERVAL_SEC = 0.05
+# ONの時のDuty Cycle (%)
+ON_DUTY_CYCLE = 25
 
-pwm = HardwarePWM(pwm_channel=PWM_CHANNEL, hz=CARRIER_FREQ)
+pwm = HardwarePWM(pwm_channel=PWM_CHANNEL, hz=PWM_FREQUENCY_HZ)
 
 
-def high_precision_sleep(duration_sec):
-    target_time = time.perf_counter() + duration_sec
-    while time.perf_counter() < target_time:
-        pass
+def read_csv(filename):
+    """
+    CSVファイルからセンサーデータを読み込む
+    フォーマット: timestamp_us, value
+    """
+    print(f"読み込み中: {filename}")
+    data = np.loadtxt(filename, delimiter=",", dtype=int, skiprows=1)
+    print(f"{len(data)} 件のレコードを読み込みました")
+    return data
+
+
+def send_data(data):
+    """
+    タイムスタンプベースでデータを送信
+    """
+    start_time = time.perf_counter()
+    data_index = 0
+    
+    # 最初のデータが1の場合、最初にPWMをONにする
+    if data[0][1] == 1:
+        pwm.change_duty_cycle(ON_DUTY_CYCLE)
+    
+    while data_index < len(data):
+        elapsed_us = (time.perf_counter() - start_time) * 1_000_000
+        current_state_end_at = data[data_index][0]
+        
+        if elapsed_us >= current_state_end_at:
+            current_value = data[data_index][1]
+            if current_value == 1:
+                pwm.change_duty_cycle(ON_DUTY_CYCLE)
+            else:
+                pwm.change_duty_cycle(0)
+            data_index += 1
+    
+        time.sleep(0.0001)
 
 
 def play_ir_signal(filename):
-    print(f"送信準備中: {filename} を読み込んでいます...")
-    signal_data = np.loadtxt(filename, delimiter=",", dtype=int, skiprows=1)
-
-    print(f"送信開始")
-
+    """
+    赤外線信号を送信
+    """
+    data = read_csv(filename)
+    
+    if len(data) == 0:
+        print("送信するデータがありません")
+        return
+    
+    print("送信開始...")
+    
     pwm.start(0)
     try:
-        for _ in range(3):
-            for state, duration_us in signal_data:
-                duration_sec = duration_us / 1_000_000.0
-                if state == 1:
-                    pwm.change_duty_cycle(25)
-                else:
-                    pwm.change_duty_cycle(0)
-                # 指定時間待機
-                high_precision_sleep(duration_sec)
+        for i in range(RETRY_COUNT):
+            send_data(data)
+            if i < RETRY_COUNT - 1:
+                time.sleep(INTERVAL_SEC)
     except KeyboardInterrupt:
         print("\n送信が中断されました")
     finally:
         pwm.stop()
+    
     print("送信完了")
 
 
