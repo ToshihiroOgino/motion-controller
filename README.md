@@ -3,7 +3,7 @@
 ## Requirements
 
 - Raspberry Pi 4B
-- Python 3.12 (**not higher than 3.12**)
+- Python 3.12 (**not higher than 3.12** because of mediapipe compatibility)
 
 ## Installation
 
@@ -43,8 +43,8 @@ make
 
 Executables:
 
-- bin/record: Record UV signal
-- bin/send: Transmit UV signal
+- `bin/record`: Record UV signal
+- `bin/send`: Transmit UV signal
 
 ## Resources
 
