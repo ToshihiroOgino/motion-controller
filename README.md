@@ -25,12 +25,26 @@ UV LED
 
 ## Setting
 
-Append blow line to /boot/firmaere/config.txt
+In `/boot/firmware/config.txt`, add the following setting:
 
 ```plaintext
 [all]
 dtoverlay=pwm,pin=19,func=2
 ```
+
+## Build
+
+```sh
+mkdir build
+cd build
+cmake ..
+make
+```
+
+Executables:
+
+- record: Record UV signal
+- send: Transmit UV signal
 
 ## Resources
 
