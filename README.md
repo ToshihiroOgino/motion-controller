@@ -24,7 +24,7 @@ UV Sensor
 
 UV LED
 
-- 5V Power Supply
+- 5V Power Supply (If you want to ensure UV LED brightness, use an external power supply)
 - GPIO 19: UV LED Output
 
 ## Setting
