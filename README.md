@@ -28,6 +28,7 @@ UV LED
 Append blow line to /boot/firmaere/config.txt
 
 ```plaintext
+[all]
 dtoverlay=pwm,pin=19,func=2
 ```
 
