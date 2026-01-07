@@ -22,6 +22,7 @@ class GPIO_PWM {
   public:
 	GPIO_PWM(uint32_t pwm_channel, uint32_t frequency_hz);
 	~GPIO_PWM();
+	void set_frequency(uint32_t frequency_hz);
 	void set_duty_cycle(int duty_cycle);
 	void enable();
 	void disable();
@@ -31,6 +32,7 @@ class GPIO_PWM {
 	uint32_t frequency_hz;
 	std::filesystem::path enable_path;
 	std::filesystem::path duty_cycle_path;
+	std::filesystem::path period_path;
 	void write_pwm_sysfs(int duty_cycle);
 };
 
