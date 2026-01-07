@@ -51,7 +51,9 @@ def process_and_draw(image, results):
         landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style(),
     )
 
-    lm = results.pose_landmarks.landmark
+    lm = None
+    if results.pose_landmarks:
+        lm = results.pose_landmarks.landmark
     is_left_raised, is_right_raised = check_hand_state(lm)
     hand_raised = is_left_raised or is_right_raised
 
@@ -158,10 +160,9 @@ def run_webcam_mode():
                 # 描画のために書き込み許可に戻す
                 image.flags.writeable = True
 
+                is_left_raised, is_right_raised = False, False
                 # 手が上がっているかどうかを検出
-                if not results.pose_landmarks:
-                    is_left_raised, is_right_raised = False, False
-                else:
+                if results.pose_landmarks:
                     is_left_raised, is_right_raised = check_hand_state(results.pose_landmarks.landmark or None)
                 hand_raised = is_left_raised or is_right_raised
 
