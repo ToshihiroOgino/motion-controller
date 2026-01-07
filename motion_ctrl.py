@@ -18,6 +18,23 @@ STABLE_FRAMES_REQUIRED = 1  # 状態を確定するのに必要なフレーム�
 SEND_EXECUTABLE_PATH = "build/bin/send"  # 送信コマンドの実行ファイルパス
 SIGNAL_FILE_PATH = "./signal/toggle.csv"  # トグル信号のCSVファイルパス
 
+def check_hand_state(landmarks):
+    """ランドマークを受け取り、左右の手が上がっているか判定して返す"""
+    if not landmarks:
+        return False, False
+
+    # Left Side
+    left_wrist = landmarks[mp_pose.PoseLandmark.LEFT_WRIST]
+    left_shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER]
+    is_left_raised = left_wrist.y < left_shoulder.y
+
+    # Right Side
+    right_wrist = landmarks[mp_pose.PoseLandmark.RIGHT_WRIST]
+    right_shoulder = landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER]
+    is_right_raised = right_wrist.y < right_shoulder.y
+
+    return is_left_raised, is_right_raised
+
 
 def process_and_draw(image, results):
     """画像と検出結果を受け取り、描画と判定を行う共通関数"""
@@ -27,7 +44,6 @@ def process_and_draw(image, results):
     if not results.pose_landmarks:
         return annotated_image, False
 
-    # --- 1. 標準的な骨格の描画 ---
     mp_drawing.draw_landmarks(
         annotated_image,
         results.pose_landmarks,
@@ -35,35 +51,22 @@ def process_and_draw(image, results):
         landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style(),
     )
 
-    # --- 2. 挙手判定カスタムロジックと強調表示 ---
     lm = results.pose_landmarks.landmark
-
-    # 左手の判定
-    left_wrist = lm[mp_pose.PoseLandmark.LEFT_WRIST]
-    ref_point_left = lm[mp_pose.PoseLandmark.LEFT_SHOULDER]  # 肩を基準
-    is_left_raised = left_wrist.y < ref_point_left.y
-
-    # 右手の判定
-    right_wrist = lm[mp_pose.PoseLandmark.RIGHT_WRIST]
-    ref_point_right = lm[mp_pose.PoseLandmark.RIGHT_SHOULDER]  # 肩を基準
-    is_right_raised = right_wrist.y < ref_point_right.y
-
-    # いずれかの手が上がっているか
+    is_left_raised, is_right_raised = check_hand_state(lm)
     hand_raised = is_left_raised or is_right_raised
 
-    # 描画処理
     if hand_raised:
         status_text = "Hand Raised!"
 
         if is_left_raised:
+            left_wrist = lm[mp_pose.PoseLandmark.LEFT_WRIST]
             cx, cy = int(left_wrist.x * width), int(left_wrist.y * height)
             cv2.circle(annotated_image, (cx, cy), 30, (0, 255, 0), -1)
-            # status_text += " (Left)" # 必要であれば詳細を表示
 
         if is_right_raised:
+            right_wrist = lm[mp_pose.PoseLandmark.RIGHT_WRIST]
             cx, cy = int(right_wrist.x * width), int(right_wrist.y * height)
             cv2.circle(annotated_image, (cx, cy), 30, (0, 255, 0), -1)
-            # status_text += " (Right)"
 
         cv2.putText(
             annotated_image,
@@ -91,14 +94,11 @@ def visualize_hand_raise(img_path):
             print(f"Error: Could not load image at {img_path}")
             return
 
-        # BGR -> RGB変換
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = pose.process(image_rgb)
 
-        # 描画処理（共通関数へ切り出し）
         annotated_image, _ = process_and_draw(image, results)
 
-        # 結果を保存
         output_dir = "captured_images"
         os.makedirs(output_dir, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -128,10 +128,9 @@ def run_webcam_mode():
         """カメラキャプチャと姿勢検出を行うスレッド（画像保存は行わない）"""
         nonlocal latest_image, latest_results, running
 
-        # 手の状態管理用変数
-        previous_hand_state = None  # 前回の確定した状態
-        STABLE_FRAMES_REQUIRED = 1  # 状態を確定するのに必要なフレーム数
-        state_history = deque(maxlen=STABLE_FRAMES_REQUIRED)  # 固定長の状態履歴リスト
+        previous_hand_state = None
+        STABLE_FRAMES_REQUIRED = 1
+        state_history = deque(maxlen=STABLE_FRAMES_REQUIRED)
 
         with mp_pose.Pose(
             static_image_mode=False,
@@ -148,34 +147,21 @@ def run_webcam_mode():
                     time.sleep(CAPTURE_INTERVAL)
                     continue
 
-                # 鏡のように操作しやすくするため左右反転させる
                 image = cv2.flip(image, 1)
 
                 # パフォーマンス向上のため、参照渡しで書き込み不可にする
                 image.flags.writeable = False
                 image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-                # 推論実行
                 results = pose.process(image_rgb)
 
                 # 描画のために書き込み許可に戻す
                 image.flags.writeable = True
 
                 # 手が上がっているかどうかを検出
-                hand_raised = False
-                if results.pose_landmarks:
-                    lm = results.pose_landmarks.landmark
-                    left_wrist = lm[mp_pose.PoseLandmark.LEFT_WRIST]
-                    ref_point_left = lm[mp_pose.PoseLandmark.LEFT_SHOULDER]
-                    is_left_raised = left_wrist.y < ref_point_left.y
+                is_left_raised, is_right_raised = check_hand_state(results.pose_landmarks.landmark)
+                hand_raised = is_left_raised or is_right_raised
 
-                    right_wrist = lm[mp_pose.PoseLandmark.RIGHT_WRIST]
-                    ref_point_right = lm[mp_pose.PoseLandmark.RIGHT_SHOULDER]
-                    is_right_raised = right_wrist.y < ref_point_right.y
-
-                    hand_raised = is_left_raised or is_right_raised
-
-                # 状態履歴に追加（固定長なので古いものは自動的に削除される）
                 state_history.append(hand_raised)
 
                 # 状態が安定しているかチェック（全要素が同じ状態）
@@ -192,7 +178,7 @@ def run_webcam_mode():
                         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
                         state_str = "UP" if current_stable_state else "DOWN"
                         print(f"[{timestamp}] Hand state: {state_str}")
-                        
+
                         # 手が上がった瞬間にコマンドを実行
                         if current_stable_state and previous_hand_state is not None:
                             try:
@@ -200,14 +186,18 @@ def run_webcam_mode():
                                     [SEND_EXECUTABLE_PATH, SIGNAL_FILE_PATH],
                                     check=True,
                                     capture_output=True,
-                                    text=True
+                                    text=True,
                                 )
-                                print(f"[{timestamp}] Command executed: {SEND_EXECUTABLE_PATH} {SIGNAL_FILE_PATH}")
+                                print(
+                                    f"[{timestamp}] Command executed: {SEND_EXECUTABLE_PATH} {SIGNAL_FILE_PATH}"
+                                )
                             except subprocess.CalledProcessError as e:
                                 print(f"[{timestamp}] Command failed: {e}")
                             except FileNotFoundError:
-                                print(f"[{timestamp}] Command not found: {SEND_EXECUTABLE_PATH}")
-                        
+                                print(
+                                    f"[{timestamp}] Command not found: {SEND_EXECUTABLE_PATH}"
+                                )
+
                         previous_hand_state = current_stable_state
 
                 # 結果を共有変数に保存（画像保存はしない）
