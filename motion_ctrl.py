@@ -159,7 +159,10 @@ def run_webcam_mode():
                 image.flags.writeable = True
 
                 # 手が上がっているかどうかを検出
-                is_left_raised, is_right_raised = check_hand_state(results.pose_landmarks.landmark)
+                if not results.pose_landmarks:
+                    is_left_raised, is_right_raised = False, False
+                else:
+                    is_left_raised, is_right_raised = check_hand_state(results.pose_landmarks.landmark or None)
                 hand_raised = is_left_raised or is_right_raised
 
                 state_history.append(hand_raised)
