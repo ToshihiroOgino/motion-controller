@@ -7,7 +7,7 @@
 #include <thread>
 #include <vector>
 
-#include "common/gpip_util.hpp"
+#include "common/gpio_util.hpp"
 
 using namespace std;
 using namespace chrono;

@@ -1,4 +1,4 @@
-#include "gpip_util.hpp"
+#include "gpio_util.hpp"
 
 #include <cstring>
 #include <filesystem>
