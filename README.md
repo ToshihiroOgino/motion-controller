@@ -17,15 +17,15 @@ pip install -r requirements.txt
 
 ## Hardware
 
-UV Sensor
+IR Sensor
 
 - 3.3V Power Supply
-- GPIO 18: UV Sensor Output
+- GPIO 18: IR Sensor Output
 
-UV LED
+IR LED
 
-- 5V Power Supply (If you want to ensure UV LED brightness, use an external power supply)
-- GPIO 19: UV LED Output
+- 5V Power Supply (If you want to ensure IR LED brightness, use an external power supply)
+- GPIO 19: IR LED Output
 
 ## Setting
 
@@ -47,8 +47,8 @@ make
 
 Executables:
 
-- `bin/record`: Record UV signal
-- `bin/send`: Transmit UV signal
+- `bin/record`: Record IR signal
+- `bin/send`: Transmit IR signal
 
 ## Resources
 
